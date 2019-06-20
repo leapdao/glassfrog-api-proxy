@@ -5,7 +5,7 @@
 # uses to deploy your code to your provider of choice
 
 # The `service` block is the name of the service
-service: glassfrog-api-proxy
+service: glassfrog-api
 
 # The `provider` block defines where your service will be deployed
 provider:
@@ -13,15 +13,63 @@ provider:
   runtime: nodejs8.10
   region: eu-west-1
 
+responseMappings: &response_mappings
+  headers:
+    Content-Type: "'application/json'"
+  statusCodes:
+      200:
+          pattern: ''
+          headers:
+            Access-Control-Allow-Origin: "'*'"
+          template:
+            application/json: ""
+      400:
+          pattern: 'Bad Request: .*'
+          headers:
+            Access-Control-Allow-Origin: "'*'"
+          template:
+            application/json: ""
+      401:
+          pattern: 'Unauthorized: .*'
+          headers:
+            Access-Control-Allow-Origin: "'*'"
+          template:
+            application/json: ""
+      403:
+          pattern: 'Forbidden: .*'
+          headers:
+            Access-Control-Allow-Origin: "'*'"
+          template:
+            application/json: ""
+      404:
+          pattern: 'Not Found: .*'
+          headers:
+            Access-Control-Allow-Origin: "'*'"
+          template:
+            application/json: ""
+      500:
+          pattern: 'Error: .*'
+          headers:
+            Access-Control-Allow-Origin: "'*'"
+
 # The `functions` block defines what code to deploy
 functions:
-  slack:
+  proxy:
     environment:
       API_TOKEN: ${env:API_TOKEN}
     handler: handler.roles
     # The `events` block defines how to trigger the handler.slack code
     events:
-      - http:
-          path: roles
+      - http:          
           method: get
+          path: /roles
+          integration: lambda
           cors: true
+          request:
+            parameters:
+              paths:
+                repo: true
+              querystrings:
+                labels: false
+            passThrough: WHEN_NO_TEMPLATES
+          response: *response_mappings
